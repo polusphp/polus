@@ -11,6 +11,8 @@ $urls = [
     '/hello/world',
     '/hello/named_route',
     '/yo',
+    '/yolo',
+    '/hello/error',
 ];
 
 foreach ($urls as $url) {
