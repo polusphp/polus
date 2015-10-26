@@ -1,0 +1,26 @@
+{
+    "name": "sunkan/polus",
+    "description": "base for my version of mvc",
+    "homepage": "https://bitbucket.org/sunkan/polus",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Andreas Sundqvist",
+            "email": "andreas@forme.se"
+        }
+    ],
+    "require": {
+        "aura/di": "2.*",
+        "aura/router": "3.*@dev",
+        "zendframework/zend-diactoros": "~1.0",
+        "php": ">=5.5.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Polus\\": "src/",
+            "Polus\\_Config\\": "config/",
+            "Polus\\Test\\": "tests/src",
+            "Polus\\Test\\_Config\\": "tests/config"
+        }
+    }
+}
