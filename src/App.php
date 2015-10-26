@@ -116,19 +116,19 @@ class App extends Container
                     // 405 METHOD NOT ALLOWED
                     // Send the $failedRoute->allows as 'Allow:'
                     if (in_array(405, $errorCodesToTrack)) {
-                        return $this->sender->send($this->errorHandler->handler($failedRoute));
+                        return $this->sender->send($this->errorHandler->handle($failedRoute));
                     }
                     $this->dispatch($this->map->getRoute('error.405'));
                     break;
                 case 'Aura\Router\Rule\Accepts':
                     if (in_array(404, $errorCodesToTrack)) {
-                        return $this->sender->send($this->errorHandler->handler($failedRoute));
+                        return $this->sender->send($this->errorHandler->handle($failedRoute));
                     }
                     $this->dispatch($this->map->getRoute('error.406'));
                     break;
                 default:
                     if (in_array(404, $errorCodesToTrack)) {
-                        return $this->sender->send($this->errorHandler->handler($failedRoute));
+                        return $this->sender->send($this->errorHandler->handle($failedRoute));
                     }
                     $this->dispatch($this->map->getRoute('error.404'));
                     // 404 NOT FOUND
@@ -154,7 +154,7 @@ class App extends Container
                     'route' => $route
                 ];
             } catch (RouteNotFound $rnf) {
-                return $this->sender->send($this->errorHandler->handler($route, $re));
+                return $this->sender->send($this->errorHandler->handle($route, $re));
             }
         }
 
