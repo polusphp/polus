@@ -20,7 +20,7 @@ trait ResponseTrait
     public function setResponseBody($data)
     {
         if (!is_string($data)) {
-            $data = json_encode($data);
+            $data = json_encode($data, \JSON_PRETTY_PRINT);
         }
         $this->response->getBody()->write($data);
         return $this;

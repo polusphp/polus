@@ -9,5 +9,8 @@ class Production extends Config
 {
     public function define(Container $di)
     {
+        $di->set('debug', function () {
+            return true;
+        });
     }
 }

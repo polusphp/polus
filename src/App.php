@@ -9,22 +9,14 @@ use Psr\Http\Message\ResponseInterface;
 use ReflectionMethod;
 use ReflectionException;
 use ReflectionParameter;
+use Exception as GenericException;
 
 class App extends Container
 {
-    protected $sender;
+    public $sender;
     protected $request;
     protected $routerContainer;
     protected $map;
-    protected $errorRoutes = [
-        'error.400' => 400,
-        'error.401' => 401,
-        'error.403' => 403,
-        'error.404' => 404,
-        'error.405' => 405,
-        'error.406' => 406,
-        'error.500' => 500
-    ];
     protected $errorHandler;
     protected $config_dir = '';
     protected $configs = [];
@@ -62,6 +54,18 @@ class App extends Container
         $this->map = $this->routerContainer->getMap();
     }
 
+    public function errorHandler()
+    {
+        if (!$this->errorHandler) {
+            $this->errorHandler = $this->newInstance('Polus\Controller\Error', [
+                'route_map' => $this->map,
+                'request' => $this->request,
+                'app' => $this
+            ]);
+        }
+        return $this->errorHandler;
+    }
+
     public function addConfig($class)
     {
         $config = $this->newInstance($class);
@@ -89,73 +93,31 @@ class App extends Container
 
     public function run()
     {
-        $errorCodesToTrack = [];
-        foreach ($this->errorRoutes as $route => $code) {
-            try {
-                $this->map->getRoute($route);
-            } catch (RouteNotFound $rnf) {
-                $errorCodesToTrack[] = $code;
-            }
-        }
-
-        if (count($errorCodesToTrack)) {
-            $this->errorHandler = $this->newInstance('Polus\Controller\Error', [
-                'codes' => $errorCodesToTrack
-            ]);
-        }
-
         $matcher = $this->routerContainer->getMatcher();
         $route = $matcher->match($this->request);
 
         if (!$route) {
-            // get the first of the best-available non-matched routes
             $failedRoute = $matcher->getFailedRoute();
-            // which matching rule failed?
-            switch ($failedRoute->failedRule) {
-                case 'Aura\Router\Rule\Allows':
-                    // 405 METHOD NOT ALLOWED
-                    // Send the $failedRoute->allows as 'Allow:'
-                    if (in_array(405, $errorCodesToTrack)) {
-                        return $this->sender->send($this->errorHandler->handle($failedRoute));
-                    }
-                    $this->dispatch($this->map->getRoute('error.405'));
-                    break;
-                case 'Aura\Router\Rule\Accepts':
-                    if (in_array(404, $errorCodesToTrack)) {
-                        return $this->sender->send($this->errorHandler->handle($failedRoute));
-                    }
-                    $this->dispatch($this->map->getRoute('error.406'));
-                    break;
-                default:
-                    if (in_array(404, $errorCodesToTrack)) {
-                        return $this->sender->send($this->errorHandler->handle($failedRoute));
-                    }
-                    $this->dispatch($this->map->getRoute('error.404'));
-                    // 404 NOT FOUND
-                    break;
-            }
+            return $this->errorHandler()->dispatch('no_match', [
+                'rule' => $failedRoute->failedRule,
+                'route' => $failedRoute
+            ]);
         }
         $this->dispatch($route);
     }
 
-    private function dispatch($route)
+    public function dispatch($route)
     {
         try {
             $controller = $this->newInstance($route->handler[0]);
             $methodReflection = new ReflectionMethod($controller, $route->handler[1]);
             $attr = $route->attributes;
         } catch (ReflectionException $re) {
-            try {
-                $errorRoute = $this->map->getRoute('error.500');
-                $controller = $this->newInstance($errorRoute->handler[0]);
-                $methodReflection = new ReflectionMethod($controller, $errorRoute->handler[1]);
-                $attr = [
-                    'exception' => $re,
-                    'route' => $route
-                ];
-            } catch (RouteNotFound $rnf) {
-                return $this->sender->send($this->errorHandler->handle($route, $re));
-            }
+            return $this->errorHandler()->dispatch('no_action', [
+                'route' => $route,
+                'exception' => $re,
+                'internal' => $route->internal ? true : false
+            ]);
         }
 
         $arguments = [];
@@ -173,8 +135,15 @@ class App extends Container
                 $arguments[] = $param->getDefaultValue();
             }
         }
-
-        $response = $methodReflection->invokeArgs($controller, $arguments);
+        try {
+            $response = $methodReflection->invokeArgs($controller, $arguments);
+        } catch (GenericException $ge) {
+            return $this->errorHandler()->dispatch('action_exception', [
+                'route' => $route,
+                'exception' => $ge,
+                'internal' => $route->internal ? true : false
+            ]);
+        }
         if (!($response instanceof ResponseInterface)) {
             $newResponse = new \Zend\Diactoros\Response();
             $newResponse->getBody()->write($response);
