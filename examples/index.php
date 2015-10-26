@@ -4,32 +4,22 @@ define('__ROOT__', dirname(__DIR__));
 require __ROOT__.'/vendor/autoload.php';
 
 use Polus\App;
-use Aura\Router\Map;
 
-class TestController implements Polus\Controller\IController
-{
-    public static function registerRoutes(Map $map, App $app)
-    {
-        $map->attach('world.', '/hello', function ($map) {
-            $map->get('world', '/world', ['TestController', 'world']);
-            $map->get('name', '/{name}', ['TestController', 'name']);
-        });
-    }
+$appNs = 'Polus\Test';
 
-    public function world()
-    {
-        return "Hello world";
-    }
+$urls = [
+    '/hello/world',
+    '/hello/named_route',
+    '/yo',
+];
 
-    public function name($name)
-    {
-        return "Hello" . $name;
-    }
+foreach ($urls as $url) {
+    echo "------ PATH: ".$url." ------ \n\n";
+    $_SERVER['REQUEST_URI'] = $url;
+    $app = new App($appNs);
+    $app->registerController('Polus\Test\Controller\Test');
+
+    $app->run();
+    unset($app);
+    echo "\n--------------\n\n";
 }
-
-$appNs = 'Vendor';
-
-$app = new App($appNs);
-
-$app->registerController('TestController');
-$app->run();

@@ -32,10 +32,7 @@ class App extends Container
     public function __construct($vendorNs)
     {
         parent::__construct(new Factory);
-        
-        $this->routerContainer = $this->newInstance('Aura\Router\RouterContainer');
-
-        $host = $_SERVER['SERVER_NAME'];
+        $host = isset($_SERVER['SERVER_NAME'])?$_SERVER['SERVER_NAME']:'';
         if (strpos($host, 'dev.')===0) {
             $this->addConfig($vendorNs . '\_Config\Dev');
         } elseif (strpos($host, 'staging.')===0) {
@@ -46,16 +43,21 @@ class App extends Container
         $this->addConfig($vendorNs . '\_Config\Common');
         $this->addConfig('Polus\_Config\Common');
 
+        $this->routerContainer = $this->get('router_container');
         $this->request = $this->get('request');
-        $contentType = $this->request->getHeader('content-type');
-        if (strpos($contentType[0], ';')) {
-            $tmp = explode(';', $contentType[0]);
-            $contentType = [trim($tmp[0])];
+
+        if ($this->request->hasHeader('content-type')) {
+            $contentType = $this->request->getHeader('content-type');
+            if (strpos($contentType[0], ';')) {
+                $tmp = explode(';', $contentType[0]);
+                $contentType = [trim($tmp[0])];
+            }
+            if ($contentType[0] == "application/json") {
+                $payload = (string)$this->request->getBody();
+                $this->request = $this->request->withParsedBody(json_decode($payload, true));
+            }
         }
-        if ($contentType[0] == "application/json") {
-            $payload = (string)$this->request->getBody();
-            $this->request = $this->request->withParsedBody(json_decode($payload, true));
-        }
+
         $this->sender = new Sender();
         $this->map = $this->routerContainer->getMap();
     }
@@ -90,7 +92,7 @@ class App extends Container
         $errorCodesToTrack = [];
         foreach ($this->errorRoutes as $route => $code) {
             try {
-                $this->map->get($route);
+                $this->map->getRoute($route);
             } catch (RouteNotFound $rnf) {
                 $errorCodesToTrack[] = $code;
             }
@@ -174,7 +176,7 @@ class App extends Container
 
         $response = $methodReflection->invokeArgs($controller, $arguments);
         if (!($response instanceof ResponseInterface)) {
-            $newResponse = new Phly\Http\Response();
+            $newResponse = new \Zend\Diactoros\Response();
             $newResponse->getBody()->write($response);
             $response = $newResponse;
         }

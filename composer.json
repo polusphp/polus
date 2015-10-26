@@ -12,13 +12,15 @@
     "require": {
         "aura/di": "2.*",
         "aura/router": "3.*@dev",
-        "zendframework/zend-diactoros": "~1.0"
+        "zendframework/zend-diactoros": "~1.0",
         "php": ">=5.5.0"
     },
     "autoload": {
         "psr-4": {
             "Polus\\": "src/",
             "Polus\\_Config\\": "config/",
+            "Polus\\Test\\": "tests/src",
+            "Polus\\Test\\_Config\\": "tests/config"
         }
     }
 }

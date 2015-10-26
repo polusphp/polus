@@ -14,6 +14,9 @@ class Sender
     }
     protected function sendStatus($response)
     {
+        if (php_sapi_name() === 'cli') {
+            return;
+        }
         $version = $response->getProtocolVersion();
         $status = $response->getStatusCode();
         $phrase = $response->getReasonPhrase();
@@ -27,6 +30,9 @@ class Sender
     }
     protected function sendHeader($name, $values)
     {
+        if (php_sapi_name() === 'cli') {
+            return;
+        }
         $name = str_replace('-', ' ', $name);
         $name = ucwords($name);
         $name = str_replace(' ', '-', $name);
