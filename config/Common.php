@@ -11,7 +11,7 @@ use Zend\Diactoros\ServerRequestFactory as RequestFactory;
 
 class Common extends Config
 {
-    const VERSION = '1.0.1';
+    const VERSION = '1.0.2';
     public function define(Container $di)
     {
         if (!$di->has('response')) {
