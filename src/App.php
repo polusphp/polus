@@ -136,6 +136,9 @@ class App extends Container
             }
         }
         try {
+            if (method_exists($this, 'preInvoke')) {
+                $this->preInvoke($controller, $methodReflection, $arguments);
+            }
             $response = $methodReflection->invokeArgs($controller, $arguments);
         } catch (GenericException $ge) {
             return $this->errorHandler()->dispatch('action_exception', [
