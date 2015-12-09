@@ -46,13 +46,17 @@ class Error
             return [$this, $this->internalMap[$code]];
         }
         try {
-            return $this->map->getRoute($this->errorRoutes[$code]);
+            $routeName = $this->errorRoutes[$code];
+            if ($routeName) {
+                return $this->map->getRoute($routeName);
+            }
+            $code = 500;
         } catch (RouteNotFound $rnf) {
             if (!isset($this->internalMap[$code])) {
                 $code = 500;
             }
-            return [$this, $this->internalMap[$code]];
         }
+        return [$this, $this->internalMap[$code]];
     }
 
     public function dispatch($action, $data)
@@ -62,6 +66,8 @@ class Error
         } else {
             switch ($action) {
                 case 'action_exception':
+                    $route = $this->getRoute($data['exception']->getCode());
+                    break;
                 case 'no_action':
                     $route = $this->getRoute(500);
                     break;
