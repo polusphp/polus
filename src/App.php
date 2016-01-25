@@ -18,6 +18,7 @@ class App extends Container
     protected $routerContainer;
     protected $map;
     protected $errorHandler;
+    protected $debug = false;
     protected $config_dir = '';
     protected $configs = [];
 
@@ -25,9 +26,9 @@ class App extends Container
     {
         parent::__construct(new Factory);
         $host = isset($_SERVER['SERVER_NAME'])?$_SERVER['SERVER_NAME']:'';
-        if (strpos($host, 'dev.')===0) {
+        if (strpos($host, 'dev.') === 0) {
             $this->addConfig($vendorNs . '\_Config\Dev');
-        } elseif (strpos($host, 'staging.')===0) {
+        } elseif (strpos($host, 'staging.') === 0) {
             $this->addConfig($vendorNs . '\_Config\Staging');
         } else {
             $this->addConfig($vendorNs . '\_Config\Production');
@@ -44,7 +45,7 @@ class App extends Container
                 $tmp = explode(';', $contentType[0]);
                 $contentType = [trim($tmp[0])];
             }
-            if ($contentType[0] == "application/json") {
+            if ($contentType[0] === "application/json") {
                 $payload = (string)$this->request->getBody();
                 $this->request = $this->request->withParsedBody(json_decode($payload, true));
             }
@@ -52,6 +53,14 @@ class App extends Container
 
         $this->sender = new Sender();
         $this->map = $this->routerContainer->getMap();
+    }
+
+    public function debug($flag = null)
+    {
+        if ($flag === null) {
+            return $this->debug;
+        }
+        $this->debug = $flag;
     }
 
     public function errorHandler()
@@ -125,11 +134,11 @@ class App extends Container
             /* @var $param ReflectionParameter */
             if (isset($attr[$param->getName()])) {
                 $arguments[] = $attr[$param->getName()];
-            } elseif ($param->getName()=='request') {
+            } elseif ($param->getName() === 'request') {
                 $arguments[] = $this->request;
-            } elseif ($param->getName()=='route') {
+            } elseif ($param->getName() === 'route') {
                 $arguments[] = $route;
-            } elseif ($param->getName()=='app') {
+            } elseif ($param->getName() === 'app') {
                 $arguments[] = $this;
             } else {
                 $arguments[] = $param->getDefaultValue();
