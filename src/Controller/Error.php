@@ -111,7 +111,7 @@ class Error
         $data = [
             'message' => 'Page not found'
         ];
-        if ($this->app->get('debug')) {
+        if ($this->app->debug()) {
             $data['route'] = [
                 'name' => $info['route']->name,
                 'path' => $info['route']->path,
