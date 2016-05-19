@@ -2,14 +2,13 @@
 
 namespace Polus;
 
-use Aura\Di\Factory;
 use Aura\Di\Container;
-use Aura\Router\Exception\RouteNotFound;
-use Psr\Http\Message\ResponseInterface;
-use ReflectionMethod;
-use ReflectionException;
-use ReflectionParameter;
+use Aura\Di\Factory;
 use Exception as GenericException;
+use Psr\Http\Message\ResponseInterface;
+use ReflectionException;
+use ReflectionMethod;
+use Zend\Diactoros\Response;
 
 class App extends Container
 {
@@ -21,17 +20,19 @@ class App extends Container
     protected $debug = false;
     protected $config_dir = '';
     protected $configs = [];
+    protected $modeMap = [];
 
-    public function __construct($vendorNs)
+    public function __construct($vendorNs, $mode = 'production')
     {
         parent::__construct(new Factory);
-        $host = isset($_SERVER['SERVER_NAME'])?$_SERVER['SERVER_NAME']:'';
-        if (strpos($host, 'dev.') === 0) {
-            $this->addConfig($vendorNs . '\_Config\Dev');
-        } elseif (strpos($host, 'staging.') === 0) {
-            $this->addConfig($vendorNs . '\_Config\Staging');
+        if (isset($this->modeMap[$mode])) {
+            $this->addConfig($this->modeMap[$mode]);
         } else {
-            $this->addConfig($vendorNs . '\_Config\Production');
+            if ($mode == 'development') {
+                $this->addConfig($vendorNs . '\_Config\Dev');
+            } else {
+                $this->addConfig($vendorNs . '\_Config\Production');
+            }
         }
         $this->addConfig($vendorNs . '\_Config\Common');
         $this->addConfig('Polus\_Config\Common');
@@ -46,7 +47,7 @@ class App extends Container
                 $contentType = [trim($tmp[0])];
             }
             if ($contentType[0] === "application/json") {
-                $payload = (string)$this->request->getBody();
+                $payload = (string) $this->request->getBody();
                 $this->request = $this->request->withParsedBody(json_decode($payload, true));
             }
         }
@@ -69,7 +70,7 @@ class App extends Container
             $this->errorHandler = $this->newInstance('Polus\Controller\Error', [
                 'route_map' => $this->map,
                 'request' => $this->request,
-                'app' => $this
+                'app' => $this,
             ]);
         }
         return $this->errorHandler;
@@ -109,7 +110,7 @@ class App extends Container
             $failedRoute = $matcher->getFailedRoute();
             return $this->errorHandler()->dispatch('no_match', [
                 'rule' => $failedRoute->failedRule,
-                'route' => $failedRoute
+                'route' => $failedRoute,
             ]);
         }
         $this->dispatch($route);
@@ -125,7 +126,7 @@ class App extends Container
             return $this->errorHandler()->dispatch('no_action', [
                 'route' => $route,
                 'exception' => $re,
-                'internal' => $route->internal ? true : false
+                'internal' => $route->internal ? true : false,
             ]);
         }
 
@@ -153,11 +154,11 @@ class App extends Container
             return $this->errorHandler()->dispatch('action_exception', [
                 'route' => $route,
                 'exception' => $ge,
-                'internal' => $route->internal ? true : false
+                'internal' => $route->internal ? true : false,
             ]);
         }
         if (!($response instanceof ResponseInterface)) {
-            $newResponse = new \Zend\Diactoros\Response();
+            $newResponse = new Response();
             $newResponse->getBody()->write($response);
             $response = $newResponse;
         }
