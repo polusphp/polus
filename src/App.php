@@ -4,6 +4,8 @@ namespace Polus;
 
 use Aura\Di\Container;
 use Aura\Di\Factory;
+use Aura\Router\Map;
+use Aura\Router\RouterContainer;
 use Exception as GenericException;
 use Psr\Http\Message\ResponseInterface;
 use ReflectionException;
@@ -12,16 +14,56 @@ use Zend\Diactoros\Response;
 
 class App extends Container
 {
+    /**
+     * @var Sender
+     */
     public $sender;
+
+    /**
+     * @var Server
+     */
     protected $request;
+
+    /**
+     * @var RouterContainer
+     *
+     */
     protected $routerContainer;
+
+    /**
+     * @var Map
+     */
     protected $map;
+
+    /**
+     * @var mixed
+     */
     protected $errorHandler;
+
+    /**
+     * @var boolean
+     */
     protected $debug = false;
+
+    /**
+     * @var string
+     */
     protected $config_dir = '';
+
+    /**
+     * @var array
+     */
     protected $configs = [];
+
+    /**
+     * @var array
+     */
     protected $modeMap = [];
 
+    /**
+     * @param string $vendorNs
+     * @param string $mode
+     */
     public function __construct($vendorNs, $mode = 'production')
     {
         parent::__construct(new Factory);
@@ -56,6 +98,10 @@ class App extends Container
         $this->map = $this->routerContainer->getMap();
     }
 
+    /**
+     * @param boolean|null $flag
+     * @return void
+     */
     public function debug($flag = null)
     {
         if ($flag === null) {
@@ -64,6 +110,9 @@ class App extends Container
         $this->debug = $flag;
     }
 
+    /**
+     * @return mixed
+     */
     public function errorHandler()
     {
         if (!$this->errorHandler) {
@@ -76,6 +125,9 @@ class App extends Container
         return $this->errorHandler;
     }
 
+    /**
+     * @param string $class
+     */
     public function addConfig($class)
     {
         $config = $this->newInstance($class);
@@ -83,6 +135,9 @@ class App extends Container
         $this->configs[] = $config;
     }
 
+    /**
+     * @param string $controllerClass
+     */
     public function registerController($controllerClass)
     {
         if (in_array('Polus\Controller\IController', class_implements($controllerClass))) {
@@ -94,13 +149,21 @@ class App extends Container
         return false;
     }
 
+    /**
+     * @param callable $rule
+     * @param $position
+     * @return boolean
+     */
     public function addRouterRule(callable $rule, $position = 'append')
     {
         $ruleIterator = $this->routerContainer->getRuleIterator();
         $ruleIterator->$position($rule);
-        return $true;
+        return true;
     }
 
+    /**
+     * @return void
+     */
     public function run()
     {
         $matcher = $this->routerContainer->getMatcher();
@@ -116,6 +179,10 @@ class App extends Container
         $this->dispatch($route);
     }
 
+    /**
+     * @param $route
+     * @return void
+     */
     public function dispatch($route)
     {
         try {
