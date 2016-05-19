@@ -2,9 +2,9 @@
 
 namespace Polus\Controller;
 
+use Aura\Router\Exception\RouteNotFound;
 use Aura\Router\Route;
 use Polus\Traits\ResponseTrait;
-use Aura\Router\Exception\RouteNotFound;
 
 class Error
 {
@@ -109,7 +109,7 @@ class Error
     protected function handle404($info)
     {
         $data = [
-            'message' => 'Page not found'
+            'message' => 'Page not found',
         ];
         if ($this->app->debug()) {
             $data['route'] = [
@@ -125,7 +125,7 @@ class Error
             $this->setResponseBody([
                 'status' => 'error',
                 'code' => 404,
-                'data' => $data
+                'data' => $data,
             ]);
         }
         return $this->response;
@@ -134,12 +134,12 @@ class Error
     protected function handle405($info)
     {
         $data = [
-            'message' => 'Method Not Allowed'
+            'message' => 'Method Not Allowed',
         ];
-        if ($this->app->get('debug')) {
+        if ($this->app->debug()) {
             $data['route'] = [
                 'name' => $info['route']->name,
-                'allows' => $info['route']->allows
+                'allows' => $info['route']->allows,
             ];
         }
         if ($this->isXhr) {
@@ -147,7 +147,7 @@ class Error
             $this->setResponseBody([
                 'status' => 'error',
                 'code' => 405,
-                'data' => $data
+                'data' => $data,
             ]);
         }
         return $this->response;
@@ -156,12 +156,12 @@ class Error
     protected function handle406($info)
     {
         $data = [
-            'message' => 'Not Acceptable'
+            'message' => 'Not Acceptable',
         ];
-        if ($this->app->get('debug')) {
+        if ($this->app->debug()) {
             $data['route'] = [
                 'name' => $info['route']->name,
-                'accepts' => $info['route']->accepts
+                'accepts' => $info['route']->accepts,
             ];
         }
         if ($this->isXhr) {
@@ -169,7 +169,7 @@ class Error
             $this->setResponseBody([
                 'status' => 'error',
                 'code' => 406,
-                'data' => $data
+                'data' => $data,
             ]);
         }
         return $this->response;
@@ -188,7 +188,7 @@ class Error
             $message = 'Error in router matching';
         }
 
-        if ($this->app->get('debug')) {
+        if ($this->app->debug()) {
             if (isset($rule)) {
                 $data['rule'] = $rule;
             }
@@ -217,7 +217,7 @@ class Error
             $this->setResponseBody([
                 'status' => 'error',
                 'code' => 500,
-                'data' => $data
+                'data' => $data,
             ]);
         }
         return $this->response;
