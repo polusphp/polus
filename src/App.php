@@ -169,6 +169,10 @@ class App extends Container
         $matcher = $this->routerContainer->getMatcher();
         $route = $matcher->match($this->request);
 
+        if (method_exists($this, 'postMatch')) {
+            $route = $this->postMatch($route, $this->request);
+        }
+
         if (!$route) {
             $failedRoute = $matcher->getFailedRoute();
             return $this->errorHandler()->dispatch('no_match', [
