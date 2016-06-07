@@ -2,13 +2,17 @@
 
 namespace Polus\Controller;
 
-use Aura\Router\Route;
-use Polus\Traits\ResponseTrait;
 use Aura\Router\Exception\RouteNotFound;
+use Aura\Router\Map;
+use Aura\Router\Route;
+use Polus\App;
+use Polus\Traits\ResponseTrait;
+use Psr\Http\Message\ServerRequestInterface;
 
 class Error
 {
     use ResponseTrait;
+
     protected $errorRoutes = [
         400 => 'error.400',
         401 => 'error.401',
@@ -18,6 +22,7 @@ class Error
         406 => 'error.406',
         500 => 'error.500',
     ];
+
     protected $internalMap = [
         404 => 'handle404',
         405 => 'handle405',
@@ -25,9 +30,28 @@ class Error
         500 => 'handle500',
         400 => 'handle500',
     ];
+
+    /**
+     * Router Map
+     * @var Map
+     */
     protected $map;
+
+    /**
+     * Application class
+     * @var App
+     */
     protected $app;
+
+    /**
+     * Request object
+     * @var ServerRequestInterface
+     */
     protected $request;
+
+    /**
+     * @var boolean
+     */
     protected $isXhr = true;
 
     public function __construct($route_map, $app, $request)
@@ -35,6 +59,7 @@ class Error
         $this->map = $route_map;
         $this->app = $app;
         $this->request = $request;
+
         if ($this->request->getHeader('HTTP_X_REQUESTED_WITH') == 'xmlhttprequest') {
             $this->isXhr = true;
         }
@@ -109,7 +134,7 @@ class Error
     protected function handle404($info)
     {
         $data = [
-            'message' => 'Page not found'
+            'message' => 'Page not found',
         ];
         if ($this->app->debug()) {
             $data['route'] = [
@@ -125,7 +150,7 @@ class Error
             $this->setResponseBody([
                 'status' => 'error',
                 'code' => 404,
-                'data' => $data
+                'data' => $data,
             ]);
         }
         return $this->response;
@@ -134,12 +159,12 @@ class Error
     protected function handle405($info)
     {
         $data = [
-            'message' => 'Method Not Allowed'
+            'message' => 'Method Not Allowed',
         ];
         if ($this->app->debug()) {
             $data['route'] = [
                 'name' => $info['route']->name,
-                'allows' => $info['route']->allows
+                'allows' => $info['route']->allows,
             ];
         }
         if ($this->isXhr) {
@@ -147,7 +172,7 @@ class Error
             $this->setResponseBody([
                 'status' => 'error',
                 'code' => 405,
-                'data' => $data
+                'data' => $data,
             ]);
         }
         return $this->response;
@@ -156,12 +181,12 @@ class Error
     protected function handle406($info)
     {
         $data = [
-            'message' => 'Not Acceptable'
+            'message' => 'Not Acceptable',
         ];
         if ($this->app->debug()) {
             $data['route'] = [
                 'name' => $info['route']->name,
-                'accepts' => $info['route']->accepts
+                'accepts' => $info['route']->accepts,
             ];
         }
         if ($this->isXhr) {
@@ -169,7 +194,7 @@ class Error
             $this->setResponseBody([
                 'status' => 'error',
                 'code' => 406,
-                'data' => $data
+                'data' => $data,
             ]);
         }
         return $this->response;
@@ -217,7 +242,7 @@ class Error
             $this->setResponseBody([
                 'status' => 'error',
                 'code' => 500,
-                'data' => $data
+                'data' => $data,
             ]);
         }
         return $this->response;
