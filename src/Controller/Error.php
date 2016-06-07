@@ -136,7 +136,7 @@ class Error
         $data = [
             'message' => 'Method Not Allowed'
         ];
-        if ($this->app->get('debug')) {
+        if ($this->app->debug()) {
             $data['route'] = [
                 'name' => $info['route']->name,
                 'allows' => $info['route']->allows
@@ -158,7 +158,7 @@ class Error
         $data = [
             'message' => 'Not Acceptable'
         ];
-        if ($this->app->get('debug')) {
+        if ($this->app->debug()) {
             $data['route'] = [
                 'name' => $info['route']->name,
                 'accepts' => $info['route']->accepts
@@ -188,7 +188,7 @@ class Error
             $message = 'Error in router matching';
         }
 
-        if ($this->app->get('debug')) {
+        if ($this->app->debug()) {
             if (isset($rule)) {
                 $data['rule'] = $rule;
             }

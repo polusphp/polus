@@ -2,14 +2,12 @@
 
 namespace Polus;
 
-use Aura\Di\Factory;
 use Aura\Di\Container;
-use Aura\Router\Exception\RouteNotFound;
-use Psr\Http\Message\ResponseInterface;
-use ReflectionMethod;
-use ReflectionException;
-use ReflectionParameter;
+use Aura\Di\Factory;
 use Exception as GenericException;
+use Psr\Http\Message\ResponseInterface;
+use ReflectionException;
+use ReflectionMethod;
 
 class App extends Container
 {
@@ -25,7 +23,7 @@ class App extends Container
     public function __construct($vendorNs)
     {
         parent::__construct(new Factory);
-        $host = isset($_SERVER['SERVER_NAME'])?$_SERVER['SERVER_NAME']:'';
+        $host = isset($_SERVER['SERVER_NAME']) ? $_SERVER['SERVER_NAME'] : '';
         if (strpos($host, 'dev.') === 0) {
             $this->addConfig($vendorNs . '\_Config\Dev');
         } elseif (strpos($host, 'staging.') === 0) {
@@ -46,7 +44,7 @@ class App extends Container
                 $contentType = [trim($tmp[0])];
             }
             if ($contentType[0] === "application/json") {
-                $payload = (string)$this->request->getBody();
+                $payload = (string) $this->request->getBody();
                 $this->request = $this->request->withParsedBody(json_decode($payload, true));
             }
         }
@@ -69,7 +67,7 @@ class App extends Container
             $this->errorHandler = $this->newInstance('Polus\Controller\Error', [
                 'route_map' => $this->map,
                 'request' => $this->request,
-                'app' => $this
+                'app' => $this,
             ]);
         }
         return $this->errorHandler;
@@ -105,11 +103,15 @@ class App extends Container
         $matcher = $this->routerContainer->getMatcher();
         $route = $matcher->match($this->request);
 
+        if (method_exists($this, 'postMatch')) {
+            $route = $this->postMatch($route, $this->request);
+        }
+
         if (!$route) {
             $failedRoute = $matcher->getFailedRoute();
             return $this->errorHandler()->dispatch('no_match', [
                 'rule' => $failedRoute->failedRule,
-                'route' => $failedRoute
+                'route' => $failedRoute,
             ]);
         }
         $this->dispatch($route);
@@ -125,7 +127,7 @@ class App extends Container
             return $this->errorHandler()->dispatch('no_action', [
                 'route' => $route,
                 'exception' => $re,
-                'internal' => $route->internal ? true : false
+                'internal' => $route->internal ? true : false,
             ]);
         }
 
@@ -153,7 +155,7 @@ class App extends Container
             return $this->errorHandler()->dispatch('action_exception', [
                 'route' => $route,
                 'exception' => $ge,
-                'internal' => $route->internal ? true : false
+                'internal' => $route->internal ? true : false,
             ]);
         }
         if (!($response instanceof ResponseInterface)) {
