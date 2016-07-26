@@ -14,6 +14,9 @@ class Common extends Config
     const VERSION = '1.5.0';
     public function define(Container $di)
     {
+        if (!isset($di->params['Polus\Middleware\Router']['router'])) {
+            $di->params['Polus\Middleware\Router']['router'] = $di->lazyGet('router_container');
+        }
         if (!$di->has('middlewares')) {
             $di->set('middlewares', function () use ($di) {
                 $queue = [];
@@ -23,6 +26,7 @@ class Common extends Config
                     $queue[] = $di->newInstance('Polus\Middleware\CliResponseSender');
                 }
                 $queue[] = $di->newInstance('Franzl\Middleware\Whoops\Middleware');
+                $queue[] = $di->newInstance('Polus\Middleware\Router');
                 $queue[] = $di->newInstance('Polus\Middleware\Status404');
                 $queue[] = $di->newInstance('Relay\Middleware\FormContentHandler');
                 $queue[] = $di->newInstance('Relay\Middleware\JsonContentHandler', [

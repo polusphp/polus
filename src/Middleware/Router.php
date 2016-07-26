@@ -4,7 +4,6 @@ namespace Polus\Middleware;
 
 use Aura\Router\Route;
 use Aura\Router\RouterContainer;
-use Polus\DispatchInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -17,19 +16,13 @@ class Router
     private $router;
 
     /**
-     * @var DispatchInterface Controller dispatcher
-     */
-    private $dispatcher;
-
-    /**
      * Set the RouterContainer instance.
      *
      * @param RouterContainer $router
      */
-    public function __construct(RouterContainer $router, DispatchInterface $dispatcher)
+    public function __construct(RouterContainer $router)
     {
         $this->router = $router;
-        $this->dispatcher = $dispatcher;
     }
 
     /**
@@ -47,21 +40,21 @@ class Router
         $route = $matcher->match($request);
         if (!$route) {
             $failedRoute = $matcher->getFailedRoute();
+            $request = $request->withAttribute('polus:route', $failedRoute);
             switch ($failedRoute->failedRule) {
                 case 'Aura\Router\Rule\Allows':
-                    return $response->withStatus(405); // 405 METHOD NOT ALLOWED
+                    $response = $response->withStatus(405); // 405 METHOD NOT ALLOWED
                 case 'Aura\Router\Rule\Accepts':
-                    return $response->withStatus(406); // 406 NOT ACCEPTABLE
+                    $response = $response->withStatus(406); // 406 NOT ACCEPTABLE
                 default:
-                    return $response->withStatus(404); // 404 NOT FOUND
+                    $response = $response->withStatus(404); // 404 NOT FOUND
+            }
+        } else {
+            $request = $request->withAttribute('polus:route', $route);
+            foreach ($route->attributes as $name => $value) {
+                $request = $request->withAttribute($name, $value);
             }
         }
-        $request = $request->withAttribute('polus:route', $route);
-        foreach ($route->attributes as $name => $value) {
-            $request = $request->withAttribute($name, $value);
-        }
-
-        $response = $this->dispatcher->dispatch($route, $request, $response);
         return $next($request, $response);
     }
 }
