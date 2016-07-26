@@ -134,7 +134,7 @@ class App extends Container
     {
         $relayBuilder = $this->get('relay');
         $queue = $this->middlewares;
-        $queue[] = new Middleware\Router($this->routerContainer, $this->dispatcher);
+        $queue[] = new Middleware\Dispatcher($this->dispatcher);
         $relay = $relayBuilder->newInstance($queue);
 
         $response = new Response();
