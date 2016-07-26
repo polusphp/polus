@@ -29,7 +29,7 @@ class Dispatcher implements DispatchInterface
     public function dispatch(Route $route, ServerRequestInterface $request, ResponseInterface $response)
     {
         try {
-            $controller = $this->getController($route);
+            $controller = $this->getController($route, $request, $response);
             $methodReflection = $this->getControllerMethod($controller, $route);
         } catch (ReflectionException $re) {
             return $response->withStatus(404);
@@ -67,7 +67,7 @@ class Dispatcher implements DispatchInterface
         return $methodReflection;
     }
 
-    protected function getController(Route $route)
+    protected function getController(Route $route, ServerRequestInterface $request, ResponseInterface $response)
     {
         $controller = $this->app->newInstance($route->handler[0]);
         if (method_exists($controller, 'setResponse')) {

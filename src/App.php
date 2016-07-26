@@ -77,7 +77,8 @@ class App extends Container
         $this->addConfig($vendorNs . '\_Config\Common');
         $this->addConfig('Polus\_Config\Common');
 
-        $this->dispatcher = $this->get('dispatcher')($this);
+        $factory = $this->get('dispatcher');
+        $this->dispatcher = $factory($this);
 
         $this->routerContainer = $this->get('router_container');
         $this->request = $this->get('request');
