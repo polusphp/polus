@@ -29,13 +29,19 @@ class Dispatcher implements DispatchInterface
     public function dispatch(Route $route, ServerRequestInterface $request, ResponseInterface $response)
     {
         try {
-            $controller = $this->app->newInstance($route->handler[0]);
-            $methodReflection = new ReflectionMethod($controller, $route->handler[1]);
-            $attr = $route->attributes;
+            $controller = $this->getController($route);
+            $methodReflection = $this->getControllerMethod($controller, $route);
         } catch (ReflectionException $re) {
             return $response->withStatus(404);
         }
 
+        return $methodReflection->invokeArgs($controller, $arguments);
+    }
+
+    protected function getControllerMethod($controller, Route $route)
+    {
+        $methodReflection = new ReflectionMethod($controller, $route->handler[1]);
+        $attr = $route->attributes;
         $arguments = [];
         foreach ($methodReflection->getParameters() as $param) {
             /* @var $param ReflectionParameter */
@@ -53,10 +59,15 @@ class Dispatcher implements DispatchInterface
                 $arguments[] = $param->getDefaultValue();
             }
         }
+        return $methodReflection;
+    }
+
+    protected function getController(Route $route)
+    {
+        $controller = $this->app->newInstance($route->handler[0]);
         if (method_exists($controller, 'setResponse')) {
             $controller->setResponse($response);
         }
-
-        return $methodReflection->invokeArgs($controller, $arguments);
+        return $controller;
     }
 }
