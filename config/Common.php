@@ -37,6 +37,17 @@ class Common extends Config
         if (!$di->has('response')) {
             $di->set('response', $di->lazyNew('Zend\Diactoros\Response'));
         }
+
+        if (!$di->has('dispatcher')) {
+            $di->set('dispatcher', function () use ($di) {
+                return function ($app) {
+                    return $this->newInstance('Polus\Dispatcher', [
+                        'app' => $app,
+                    ]);
+                };
+            });
+        }
+
         if (!$di->has('request')) {
             $di->set('request', RequestFactory::fromGlobals());
         }
