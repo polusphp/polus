@@ -35,12 +35,11 @@ class Dispatcher implements DispatchInterface
             return $response->withStatus(404);
         }
 
-        return $methodReflection->invokeArgs($controller, $arguments);
+        return $methodReflection->invokeArgs($controller, $this->getMethodArguments($methodReflection, $route, $request, $response));
     }
 
-    protected function getControllerMethod($controller, Route $route)
+    protected function getMethodArguments($methodReflection, Route $route, ServerRequestInterface $request, ResponseInterface $response)
     {
-        $methodReflection = new ReflectionMethod($controller, $route->handler[1]);
         $attr = $route->attributes;
         $arguments = [];
         foreach ($methodReflection->getParameters() as $param) {
@@ -59,6 +58,12 @@ class Dispatcher implements DispatchInterface
                 $arguments[] = $param->getDefaultValue();
             }
         }
+        return $arguments;
+    }
+
+    protected function getControllerMethod($controller, Route $route)
+    {
+        $methodReflection = new ReflectionMethod($controller, $route->handler[1]);
         return $methodReflection;
     }
 

@@ -12,7 +12,7 @@ $urls = [
     '/hello/named_route',
     '/yo',
     '/yolo',
-    //'/hello/error',
+    '/hello/error',
 ];
 
 foreach ($urls as $url) {

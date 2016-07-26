@@ -40,8 +40,8 @@ class Common extends Config
 
         if (!$di->has('dispatcher')) {
             $di->set('dispatcher', function () use ($di) {
-                return function ($app) {
-                    return $this->newInstance('Polus\Dispatcher', [
+                return function ($app) use ($di) {
+                    return $di->newInstance('Polus\Dispatcher', [
                         'app' => $app,
                     ]);
                 };
