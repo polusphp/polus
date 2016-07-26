@@ -6,9 +6,6 @@ use Aura\Di\Container;
 use Aura\Di\Factory;
 use Aura\Router\Map;
 use Aura\Router\RouterContainer;
-use Exception as GenericException;
-use Psr\Http\Message\ResponseInterface;
-use ReflectionException;
 use ReflectionMethod;
 use Zend\Diactoros\Response;
 
@@ -41,11 +38,6 @@ class App extends Container
     protected $errorHandler;
 
     /**
-     * @var boolean
-     */
-    protected $debug = false;
-
-    /**
      * @var string
      */
     protected $config_dir = '';
@@ -59,6 +51,12 @@ class App extends Container
      * @var array
      */
     protected $modeMap = [];
+
+    /**
+     * Psr7 middleware queue
+     * @var array
+     */
+    protected $middlewares = [];
 
     /**
      * @param string $vendorNs
@@ -79,50 +77,23 @@ class App extends Container
         $this->addConfig($vendorNs . '\_Config\Common');
         $this->addConfig('Polus\_Config\Common');
 
-        $this->routerContainer = $this->get('router_container');
-        $this->request = $this->get('request');
-
-        if ($this->request->hasHeader('content-type')) {
-            $contentType = $this->request->getHeader('content-type');
-            if (strpos($contentType[0], ';')) {
-                $tmp = explode(';', $contentType[0]);
-                $contentType = [trim($tmp[0])];
-            }
-            if ($contentType[0] === "application/json") {
-                $payload = (string) $this->request->getBody();
-                $this->request = $this->request->withParsedBody(json_decode($payload, true));
-            }
-        }
-
-        $this->sender = new Sender();
-        $this->map = $this->routerContainer->getMap();
-    }
-
-    /**
-     * @param boolean|null $flag
-     * @return void
-     */
-    public function debug($flag = null)
-    {
-        if ($flag === null) {
-            return $this->debug;
-        }
-        $this->debug = $flag;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function errorHandler()
-    {
-        if (!$this->errorHandler) {
-            $this->errorHandler = $this->newInstance('Polus\Controller\Error', [
-                'route_map' => $this->map,
-                'request' => $this->request,
+        if (!$this->has('dispatcher')) {
+            $this->dispatcher = $this->newInstance('Polus\Dispatcher', [
                 'app' => $this,
             ]);
+        } else {
+            $this->dispatcher = $this->get('dispatcher');
         }
-        return $this->errorHandler;
+
+        $this->routerContainer = $this->get('router_container');
+        $this->request = $this->get('request');
+        $this->map = $this->routerContainer->getMap();
+        $this->middlewares = $this->get('middlewares');
+    }
+
+    public function addMiddleware(callable $middleware)
+    {
+        $this->middlewares[] = $middleware;
     }
 
     /**
@@ -166,73 +137,12 @@ class App extends Container
      */
     public function run()
     {
-        $matcher = $this->routerContainer->getMatcher();
-        $route = $matcher->match($this->request);
+        $relayBuilder = $this->get('relay');
+        $queue = $this->middlewares;
+        $queue[] = new Middleware\Router($this->routerContainer, $this->dispatcher);
+        $relay = $relayBuilder->newInstance($queue);
 
-        if (method_exists($this, 'postMatch')) {
-            $route = $this->postMatch($route, $this->request);
-        }
-
-        if (!$route) {
-            $failedRoute = $matcher->getFailedRoute();
-            return $this->errorHandler()->dispatch('no_match', [
-                'rule' => $failedRoute->failedRule,
-                'route' => $failedRoute,
-            ]);
-        }
-        $this->dispatch($route);
-    }
-
-    /**
-     * @param $route
-     * @return void
-     */
-    public function dispatch($route)
-    {
-        try {
-            $controller = $this->newInstance($route->handler[0]);
-            $methodReflection = new ReflectionMethod($controller, $route->handler[1]);
-            $attr = $route->attributes;
-        } catch (ReflectionException $re) {
-            return $this->errorHandler()->dispatch('no_action', [
-                'route' => $route,
-                'exception' => $re,
-                'internal' => $route->internal ? true : false,
-            ]);
-        }
-
-        $arguments = [];
-        foreach ($methodReflection->getParameters() as $param) {
-            /* @var $param ReflectionParameter */
-            if (isset($attr[$param->getName()])) {
-                $arguments[] = $attr[$param->getName()];
-            } elseif ($param->getName() === 'request') {
-                $arguments[] = $this->request;
-            } elseif ($param->getName() === 'route') {
-                $arguments[] = $route;
-            } elseif ($param->getName() === 'app') {
-                $arguments[] = $this;
-            } else {
-                $arguments[] = $param->getDefaultValue();
-            }
-        }
-        try {
-            if (method_exists($this, 'preInvoke')) {
-                $this->preInvoke($controller, $methodReflection, $arguments);
-            }
-            $response = $methodReflection->invokeArgs($controller, $arguments);
-        } catch (GenericException $ge) {
-            return $this->errorHandler()->dispatch('action_exception', [
-                'route' => $route,
-                'exception' => $ge,
-                'internal' => $route->internal ? true : false,
-            ]);
-        }
-        if (!($response instanceof ResponseInterface)) {
-            $newResponse = new Response();
-            $newResponse->getBody()->write($response);
-            $response = $newResponse;
-        }
-        $this->sender->send($response);
+        $response = new Response();
+        $response = $relay($this->request, $response);
     }
 }

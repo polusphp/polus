@@ -13,7 +13,11 @@
         "aura/di": "2.*",
         "aura/router": "3.*@dev",
         "zendframework/zend-diactoros": "~1.0",
-        "php": ">=5.5.0"
+        "php": ">=5.5.0",
+        "relay/relay": "~1.0",
+        "relay/middleware": "~1.0",
+        "filp/whoops": "^2.1",
+        "franzl/whoops-middleware": "^0.4.1"
     },
     "autoload": {
         "psr-4": {

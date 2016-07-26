@@ -2,9 +2,11 @@
 
 namespace Polus\Test\Controller;
 
-use Polus\Controller\IController;
 use Aura\Router\Map;
 use Polus\App;
+use Polus\Controller\IController;
+use Psr\Http\Message\ResponseInterface;
+use Zend\Diactoros\Response\HtmlResponse as Response;
 
 class Test implements IController
 {
@@ -17,20 +19,21 @@ class Test implements IController
         });
     }
 
-    public function world()
+    public function world(ResponseInterface $response)
     {
-        return "Hello world\n";
+        $response->getBody()->write("Hello world\n");
+        return $response;
     }
 
     public function errorTest()
     {
         throw new \Exception("Error Processing Request", 1);
 
-        return "Error says hello\n";
+        return new Response("Error says hello\n");
     }
 
     public function name($name)
     {
-        return "Hello " . $name . "\n";
+        return new Response("Hello " . $name . "\n");
     }
 }
