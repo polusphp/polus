@@ -11,7 +11,7 @@
     ],
     "require": {
         "aura/di": "2.*",
-        "aura/router": "3.*@dev",
+        "aura/router": "~3.0",
         "zendframework/zend-diactoros": "~1.0",
         "php": ">=5.5.0",
         "relay/relay": "~1.0",
