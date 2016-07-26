@@ -4,9 +4,9 @@ namespace Polus\_Config;
 
 use Aura\Di\Config;
 use Aura\Di\Container;
-use Polus\Router\Route;
-use Polus\Router\AliasRule;
 use Aura\Router\Rule;
+use Polus\Router\AliasRule;
+use Polus\Router\Route;
 use Zend\Diactoros\ServerRequestFactory as RequestFactory;
 
 class Common extends Config
@@ -14,6 +14,26 @@ class Common extends Config
     const VERSION = '1.5.0';
     public function define(Container $di)
     {
+        if (!$di->has('middlewares')) {
+            $di->set('middlewares', function () use ($di) {
+                $queue = [];
+                if (php_sapi_name() !== 'cli') {
+                    $queue[] = $di->newInstance('Relay\Middleware\ResponseSender');
+                } else {
+                    $queue[] = $di->newInstance('Polus\Middleware\CliResponseSender');
+                }
+                $queue[] = $di->newInstance('Franzl\Middleware\Whoops\Middleware');
+                $queue[] = $di->newInstance('Polus\Middleware\Status404');
+                $queue[] = $di->newInstance('Relay\Middleware\FormContentHandler');
+                $queue[] = $di->newInstance('Relay\Middleware\JsonContentHandler', [
+                    'assoc' => true,
+                ]);
+                return $queue;
+            });
+        }
+        if (!$di->has('relay')) {
+            $di->set('relay', $di->lazyNew('Relay\RelayBuilder'));
+        }
         if (!$di->has('response')) {
             $di->set('response', $di->lazyNew('Zend\Diactoros\Response'));
         }
@@ -37,6 +57,5 @@ class Common extends Config
                 return $routerContainer;
             });
         }
-        $di->setter['Polus\Traits\ResponseTrait']['setResponse'] = $di->lazyGet('response');
     }
 }
