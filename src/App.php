@@ -96,9 +96,11 @@ class App extends Container
      */
     public function addConfig($class)
     {
-        $config = $this->newInstance($class);
-        $config->define($this);
-        $this->configs[] = $config;
+        if (class_exists($class)) {
+            $config = $this->newInstance($class);
+            $config->define($this);
+            $this->configs[] = $config;
+        }
     }
 
     /**
