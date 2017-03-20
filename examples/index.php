@@ -10,6 +10,7 @@ $appNs = 'Polus\Test';
 $urls = [
     '/hello/world',
     '/hello/named_route',
+    '/hello/invoke',
     '/yo',
     '/yolo',
     '/hello/error',

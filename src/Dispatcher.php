@@ -40,20 +40,23 @@ class Dispatcher implements DispatchInterface
 
     protected function getMethodArguments($methodReflection, Route $route, ServerRequestInterface $request, ResponseInterface $response)
     {
+        $app = $this->app;
+        $testVarArray = ['request', 'response', 'route', 'app'];
+
         $attr = $route->attributes;
         $arguments = [];
         foreach ($methodReflection->getParameters() as $param) {
-            /* @var $param ReflectionParameter */
+            $paramClass = $param->getClass();
             if (isset($attr[$param->getName()])) {
                 $arguments[] = $attr[$param->getName()];
-            } elseif ($param->getName() === 'response') {
-                $arguments[] = $response;
-            } elseif ($param->getName() === 'request') {
-                $arguments[] = $request;
-            } elseif ($param->getName() === 'route') {
-                $arguments[] = $route;
-            } elseif ($param->getName() === 'app') {
-                $arguments[] = $this->app;
+            } elseif ($paramClass) {
+                foreach ($testVarArray as $testVar) {
+                    if ($paramClass->isInstance($$testVar)) {
+                        $arguments[] = $$testVar;
+                    }
+                }
+            } elseif (in_array($param->getName(), $testVarArray)) {
+                $arguments[] = ${$param->getName()};
             } else {
                 $arguments[] = $param->getDefaultValue();
             }
@@ -63,13 +66,21 @@ class Dispatcher implements DispatchInterface
 
     protected function getControllerMethod($controller, Route $route)
     {
-        $methodReflection = new ReflectionMethod($controller, $route->handler[1]);
+        $methodName = $route->handler[1];
+        if (is_string($route->handler)) {
+            $methodName = '__invoke';
+        }
+        $methodReflection = new ReflectionMethod($controller, $methodName);
         return $methodReflection;
     }
 
     protected function getController(Route $route, ServerRequestInterface $request, ResponseInterface $response)
     {
-        $controller = $this->app->newInstance($route->handler[0]);
+        $controllerName = $route->handler[0];
+        if (is_string($route->handler)) {
+            $controllerName = $route->handler;
+        }
+        $controller = $this->app->newInstance($controllerName);
         if (method_exists($controller, 'setResponse')) {
             $controller->setResponse($response);
         }
