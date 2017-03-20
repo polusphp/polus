@@ -11,7 +11,6 @@ use Zend\Diactoros\ServerRequestFactory as RequestFactory;
 
 class Common extends Config
 {
-    const VERSION = '1.5.0';
     public function define(Container $di)
     {
         if (!isset($di->params['Polus\Middleware\Router']['router'])) {
@@ -20,18 +19,31 @@ class Common extends Config
         if (!$di->has('middlewares')) {
             $di->set('middlewares', function () use ($di) {
                 $queue = [];
+                if ($di->has('mode:middlewares')) {
+                    $queue = $di->get('mode:middlewares');
+                }
+                $queue = [];
                 if (php_sapi_name() !== 'cli') {
                     $queue[] = $di->newInstance('Relay\Middleware\ResponseSender');
                 } else {
                     $queue[] = $di->newInstance('Polus\Middleware\CliResponseSender');
                 }
                 $queue[] = $di->newInstance('Franzl\Middleware\Whoops\Middleware');
+                if ($di->has('mode:middlewares:preRouter')) {
+                    $queue = array_merge($queue, $di->get('mode:middlewares:preRouter'));
+                }
                 $queue[] = $di->newInstance('Polus\Middleware\Router');
+                if ($di->has('mode:middlewares:postRouter')) {
+                    $queue = array_merge($queue, $di->get('mode:middlewares:postRouter'));
+                }
                 $queue[] = $di->newInstance('Polus\Middleware\Status404');
                 $queue[] = $di->newInstance('Relay\Middleware\FormContentHandler');
                 $queue[] = $di->newInstance('Relay\Middleware\JsonContentHandler', [
                     'assoc' => true,
                 ]);
+                if ($di->has('mode:middlewares:preDispatcher')) {
+                    $queue = array_merge($queue, $di->get('mode:middlewares:preDispatcher'));
+                }
                 return $queue;
             });
         }
