@@ -6,6 +6,7 @@ use Aura\Di\Container;
 use Aura\Di\Factory;
 use Aura\Router\Map;
 use Aura\Router\RouterContainer;
+use Psr\Http\Message\ServerRequestInterface;
 use ReflectionMethod;
 use Zend\Diactoros\Response;
 
@@ -17,7 +18,7 @@ class App extends Container
     public $sender;
 
     /**
-     * @var Server
+     * @var ServerRequestInterface
      */
     protected $request;
 
@@ -59,10 +60,16 @@ class App extends Container
     protected $middlewares = [];
 
     /**
+     * Dispatcher
+     * @var Polus\DispatcherInterface
+     */
+    protected $dispatcher;
+
+    /**
      * @param string $vendorNs
      * @param string $mode
      */
-    public function __construct($vendorNs, $mode = 'production')
+    public function __construct($vendorNs, $mode = 'production', $request = null)
     {
         parent::__construct(new Factory);
         if (isset($this->modeMap[$mode])) {
@@ -77,13 +84,37 @@ class App extends Container
         $this->addConfig($vendorNs . '\_Config\Common');
         $this->addConfig('Polus\_Config\Common');
 
-        $factory = $this->get('dispatcher');
+        $factory = $this->get('polus:dispatcher');
         $this->dispatcher = $factory($this);
 
-        $this->routerContainer = $this->get('router_container');
-        $this->request = $this->get('request');
+        $this->routerContainer = $this->get('polus:router_container');
+        $this->request = $request ?? $this->get('polus:request');
         $this->map = $this->routerContainer->getMap();
-        $this->middlewares = $this->get('middlewares');
+        $this->middlewares = $this->get('polus:middlewares');
+    }
+
+    public function getContainer()
+    {
+        return $this;
+    }
+
+    /**
+     * For testing purpose
+     * @param ServerRequestInterface $request [description]
+     */
+    public function setRequest(ServerRequestInterface $request)
+    {
+        $this->request = $request;
+    }
+
+    public function getMap()
+    {
+        return $this->map;
+    }
+
+    public function getDispatcher()
+    {
+        return $this->dispatcher;
     }
 
     public function addMiddleware(callable $middleware)

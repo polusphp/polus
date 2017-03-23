@@ -3,9 +3,11 @@
 namespace Polus;
 
 use Aura\Router\Route;
+use Closure;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use ReflectionException;
+use ReflectionFunction;
 use ReflectionMethod;
 
 class Dispatcher implements DispatchInterface
@@ -15,9 +17,12 @@ class Dispatcher implements DispatchInterface
      */
     protected $app;
 
-    public function __construct(App $app)
+    protected $resolver;
+
+    public function __construct(App $app, DispatchResolverInterface $resolver)
     {
         $this->app = $app;
+        $this->resolver = $resolver;
     }
 
     /**
@@ -30,12 +35,17 @@ class Dispatcher implements DispatchInterface
     {
         try {
             $controller = $this->getController($route, $request, $response);
-            $methodReflection = $this->getControllerMethod($controller, $route);
+            if ($controller === -1) {
+                $methodReflection = new ReflectionFunction($route->handler);
+                $response = $methodReflection->invokeArgs($this->getMethodArguments($methodReflection, $route, $request, $response));
+            } else {
+                $methodReflection = $this->getControllerMethod($controller, $route);
+                $response = $methodReflection->invokeArgs($controller, $this->getMethodArguments($methodReflection, $route, $request, $response));
+            }
         } catch (ReflectionException $re) {
-            return $response->withStatus(404);
+            $response = $response->withStatus(404);
         }
-
-        return $methodReflection->invokeArgs($controller, $this->getMethodArguments($methodReflection, $route, $request, $response));
+        return $response;
     }
 
     protected function getMethodArguments($methodReflection, Route $route, ServerRequestInterface $request, ResponseInterface $response)
@@ -76,11 +86,14 @@ class Dispatcher implements DispatchInterface
 
     protected function getController(Route $route, ServerRequestInterface $request, ResponseInterface $response)
     {
+        if ($route->handler instanceof Closure) {
+            return -1;
+        }
         $controllerName = $route->handler[0];
         if (is_string($route->handler)) {
             $controllerName = $route->handler;
         }
-        $controller = $this->app->newInstance($controllerName);
+        $controller = $this->resolver->resolveController($controllerName);
         if (method_exists($controller, 'setResponse')) {
             $controller->setResponse($response);
         }

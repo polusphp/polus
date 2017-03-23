@@ -14,10 +14,10 @@ class Common extends Config
     public function define(Container $di)
     {
         if (!isset($di->params['Polus\Middleware\Router']['router'])) {
-            $di->params['Polus\Middleware\Router']['router'] = $di->lazyGet('router_container');
+            $di->params['Polus\Middleware\Router']['router'] = $di->lazyGet('polus:router_container');
         }
-        if (!$di->has('middlewares')) {
-            $di->set('middlewares', function () use ($di) {
+        if (!$di->has('polus:middlewares')) {
+            $di->set('polus:middlewares', function () use ($di) {
                 $queue = [];
                 if ($di->has('mode:middlewares')) {
                     $queue = $di->get('mode:middlewares');
@@ -50,12 +50,20 @@ class Common extends Config
         if (!$di->has('relay')) {
             $di->set('relay', $di->lazyNew('Relay\RelayBuilder'));
         }
-        if (!$di->has('response')) {
-            $di->set('response', $di->lazyNew('Zend\Diactoros\Response'));
+        if (!$di->has('polus:response')) {
+            $di->set('polus:response', $di->lazyNew('Zend\Diactoros\Response'));
         }
 
-        if (!$di->has('dispatcher')) {
-            $di->set('dispatcher', function () use ($di) {
+        if (!$di->has('polus:dispatch_resolver')) {
+            $di->set('polus:dispatch_resolver', $di->lazyNew('Polus\DispatchResolver', [
+                'resolver' => function ($cls) use ($di) {
+                    return $di->newInstance($cls);
+                },
+            ]));
+        }
+        $di->types['Polus\DispatchResolverInterface'] = $di->lazyGet('polus:dispatch_resolver');
+        if (!$di->has('polus:dispatcher')) {
+            $di->set('polus:dispatcher', function () use ($di) {
                 return function ($app) use ($di) {
                     return $di->newInstance('Polus\Dispatcher', [
                         'app' => $app,
@@ -64,11 +72,11 @@ class Common extends Config
             });
         }
 
-        if (!$di->has('request')) {
-            $di->set('request', RequestFactory::fromGlobals());
+        if (!$di->has('polus:request')) {
+            $di->set('polus:request', RequestFactory::fromGlobals());
         }
-        if (!$di->has('router_container')) {
-            $di->set('router_container', function () use ($di) {
+        if (!$di->has('polus:router_container')) {
+            $di->set('polus:router_container', function () use ($di) {
                 $routerContainer = $di->newInstance('Aura\Router\RouterContainer');
                 $routerContainer->setRouteFactory(function () {
                     return new Route();
