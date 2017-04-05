@@ -19,7 +19,7 @@ class Dispatcher implements DispatchInterface
 
     protected $resolver;
 
-    public function __construct(App $app, DispatchResolverInterface $resolver)
+    public function __construct(App $app, ResolverInterface $resolver)
     {
         $this->app = $app;
         $this->resolver = $resolver;
@@ -93,7 +93,7 @@ class Dispatcher implements DispatchInterface
         if (is_string($route->handler)) {
             $controllerName = $route->handler;
         }
-        $controller = $this->resolver->resolveController($controllerName);
+        $controller = $this->resolver->resolve($controllerName);
         if (method_exists($controller, 'setResponse')) {
             $controller->setResponse($response);
         }
