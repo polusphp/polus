@@ -84,9 +84,6 @@ class App extends Container
         $this->addConfig($vendorNs . '\_Config\Common');
         $this->addConfig('Polus\_Config\Common');
 
-        $factory = $this->get('polus:dispatcher');
-        $this->dispatcher = $factory($this);
-
         $this->routerContainer = $this->get('polus:router_container');
         $this->request = $request ?? $this->get('polus:request');
         $this->map = $this->routerContainer->getMap();
@@ -114,6 +111,10 @@ class App extends Container
 
     public function getDispatcher()
     {
+        if (!$this->dispatcher) {
+            $factory = $this->get('polus:dispatcher');
+            $this->dispatcher = $factory($this);
+        }
         return $this->dispatcher;
     }
 
@@ -167,7 +168,7 @@ class App extends Container
     {
         $relayBuilder = $this->get('relay');
         $queue = $this->middlewares;
-        $queue[] = new Middleware\Dispatcher($this->dispatcher);
+        $queue[] = new Middleware\Dispatcher($this->getDispatcher());
         $relay = $relayBuilder->newInstance($queue);
 
         $response = new Response();

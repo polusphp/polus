@@ -2,7 +2,7 @@
 
 namespace Polus;
 
-class DispatchResolver implements DispatchResolverInterface
+class DispatchResolver implements ResolverInterface
 {
     protected $resolver;
 
@@ -11,10 +11,9 @@ class DispatchResolver implements DispatchResolverInterface
         $this->resolver = $resolver;
     }
 
-    public function resolveController($controllerName)
+    public function resolve($cls)
     {
         $resolver = $this->resolver;
-        $controller = $resolver($controllerName);
-        return $controller;
+        return $resolver($cls);
     }
 }
